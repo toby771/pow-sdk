@@ -1,0 +1,102 @@
+import { beforeAll, describeSuite, expect } from "@moonwall/cli";
+import { subtensor } from "@polkadot-api/descriptors";
+import { ethers } from "ethers";
+import type { TypedApi } from "polkadot-api";
+import {
+    convertH160ToSS58,
+    createEthersWallet,
+    disableWhiteListCheck,
+    forceSetBalance,
+    getBalance,
+    PRECOMPILE_GAS_CONTRACT_ABI,
+    PRECOMPILE_GAS_CONTRACT_BYTECODE,
+    waitForFinalizedBlocks,
+    waitUntilBlockFinalized,
+} from "../../utils";
+
+const MIN_PRECOMPILE_GAS = BigInt(6000);
+const MAX_PRECOMPILE_GAS = BigInt(10000);
+const ITERATION_COUNTS = [1, 11, 101] as const;
+
+async function assertPrecompileGasScaling(
+    api: TypedApi<typeof subtensor>,
+    wallet: ethers.Wallet,
+    call: (iterations: number) => Promise<ethers.ContractTransactionResponse>
+): Promise<void> {
+    let oneIterationGas = BigInt(0);
+
+    for (const iterations of ITERATION_COUNTS) {
+        const balanceBefore = await getBalance(api, convertH160ToSS58(wallet.address));
+        const tx = await call(iterations);
+        const receipt = await tx.wait();
+        // Wait for the receipt's own block to finalize rather than a fixed
+        // block count: when GRANDPA lags best by more than 2 blocks, a fixed
+        // wait ends before the fee deduction is in finalized state and the
+        // balanceAfter < balanceBefore assertion sees identical balances.
+        await waitUntilBlockFinalized(api, receipt!.blockNumber);
+
+        const balanceAfter = await getBalance(api, convertH160ToSS58(wallet.address));
+        expect(balanceAfter).toBeLessThan(balanceBefore);
+
+        const gasUsed = receipt!.gasUsed;
+        if (iterations === 1) {
+            oneIterationGas = gasUsed;
+            continue;
+        }
+
+        expect(gasUsed >= oneIterationGas).toBe(true);
+
+        const precompileUsedGas = gasUsed - oneIterationGas;
+        const minExpected = MIN_PRECOMPILE_GAS * BigInt(iterations - 1);
+        const maxExpected = MAX_PRECOMPILE_GAS * BigInt(iterations - 1);
+
+        expect(precompileUsedGas >= minExpected).toBe(true);
+        expect(precompileUsedGas <= maxExpected).toBe(true);
+    }
+}
+
+describeSuite({
+    id: "precompile-gas",
+    title: "SR25519 and ED25519 precompile gas tests",
+    foundationMethods: "zombie",
+    testCases: ({ it, context }) => {
+        let api: TypedApi<typeof subtensor>;
+        let ethWallet: ethers.Wallet;
+
+        beforeAll(async () => {
+            api = context.papi("Node").getTypedApi(subtensor);
+            const provider = context.ethers("EVM").provider as ethers.JsonRpcProvider;
+            ethWallet = createEthersWallet(provider);
+
+            await forceSetBalance(api, convertH160ToSS58(ethWallet.address));
+            await disableWhiteListCheck(api, true);
+            await waitForFinalizedBlocks(api, 1);
+        }, 300000);
+
+        it({
+            id: "T01",
+            title: "Can deploy and call precompile gas contract",
+            test: async () => {
+                const fee = await api.query.BaseFee.BaseFeePerGas.getValue();
+                expect(fee[0]).toBeGreaterThan(1_000_000_000);
+
+                const contractFactory = new ethers.ContractFactory(
+                    PRECOMPILE_GAS_CONTRACT_ABI,
+                    PRECOMPILE_GAS_CONTRACT_BYTECODE,
+                    ethWallet
+                );
+                const contractDeploy = await contractFactory.deploy();
+                await contractDeploy.waitForDeployment();
+                await waitForFinalizedBlocks(api, 1);
+
+                const contractAddress = await contractDeploy.getAddress();
+                expect(contractAddress).toBeDefined();
+
+                const contract = new ethers.Contract(contractAddress, PRECOMPILE_GAS_CONTRACT_ABI, ethWallet);
+
+                await assertPrecompileGasScaling(api, ethWallet, (iterations) => contract.callED25519(iterations));
+                await assertPrecompileGasScaling(api, ethWallet, (iterations) => contract.callSR25519(iterations));
+            },
+        });
+    },
+});

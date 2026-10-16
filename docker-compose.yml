@@ -1,0 +1,87 @@
+volumes:
+  mainnet-lite-volume:
+  mainnet-archive-volume:
+  testnet-lite-volume:
+  testnet-archive-volume:
+
+services:
+  common: &common
+    image: ghcr.io/raofoundation/subtensor:latest
+## Uncomment to build from scratch:
+#    build:
+#      context: .
+#      dockerfile: Dockerfile
+#      target: subtensor
+    cpu_count: 4
+    mem_limit: 40000000000
+    memswap_limit: 80000000000
+    ports:
+      - "9944:9944"
+      - "30333:30333"
+      - "9933:9933"
+    expose:
+      - "9944"
+      - "30333"
+      - "9933"
+
+  mainnet-lite:
+    <<: *common
+    container_name: subtensor-mainnet-lite
+    volumes:
+      - mainnet-lite-volume:/data
+    command:
+      - --base-path=/data
+      - --chain=./chainspecs/raw_spec_finney.json
+      - --rpc-external
+      - --rpc-cors=all
+      - --no-mdns
+      - --bootnodes=/dns/bootnode.finney.chain.opentensor.ai/tcp/30333/ws/p2p/12D3KooWRwbMb85RWnT8DSXSYMWQtuDwh4LJzndoRrTDotTR5gDC
+      - --sync=warp
+      - --database paritydb
+      - --db-cache 4096
+      - --trie-cache-size 2048
+
+  mainnet-archive:
+    <<: *common
+    container_name: subtensor-mainnet-archive
+    volumes:
+      - mainnet-archive-volume:/data
+    command:
+      - --base-path=/data
+      - --chain=./chainspecs/raw_spec_finney.json
+      - --rpc-external
+      - --rpc-cors=all
+      - --no-mdns
+      - --bootnodes=/dns/bootnode.finney.chain.opentensor.ai/tcp/30333/ws/p2p/12D3KooWRwbMb85RWnT8DSXSYMWQtuDwh4LJzndoRrTDotTR5gDC
+      - --pruning=archive
+
+  testnet-lite:
+    <<: *common
+    container_name: subtensor-testnet-lite
+    volumes:
+      - testnet-lite-volume:/data
+    command:
+      - --base-path=/data
+      - --chain=./chainspecs/raw_spec_testfinney.json
+      - --rpc-external
+      - --rpc-cors=all
+      - --no-mdns
+      - --bootnodes=/dns/bootnode.test.finney.opentensor.ai/tcp/30333/p2p/12D3KooWPM4mLcKJGtyVtkggqdG84zWrd7Rij6PGQDoijh1X86Vr
+      - --sync=warp
+      - --database paritydb
+      - --db-cache 4096
+      - --trie-cache-size 2048
+
+  testnet-archive:
+    <<: *common
+    container_name: subtensor-testnet-archive
+    volumes:
+      - testnet-archive-volume:/data
+    command:
+      - --base-path=/data
+      - --chain=./chainspecs/raw_spec_testfinney.json
+      - --rpc-external
+      - --rpc-cors=all
+      - --no-mdns
+      - --bootnodes=/dns/bootnode.test.finney.opentensor.ai/tcp/30333/p2p/12D3KooWPM4mLcKJGtyVtkggqdG84zWrd7Rij6PGQDoijh1X86Vr
+      - --pruning=archive

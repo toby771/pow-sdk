@@ -1,0 +1,418 @@
+use frame_support::pallet_macros::pallet_section;
+
+/// A [`pallet_section`] that defines the errors for a pallet.
+/// This can later be imported into the pallet using [`import_section`].
+#[pallet_section]
+mod errors {
+    #[derive(PartialEq)]
+    #[pallet::error]
+    pub enum Error<T> {
+        /// The root network does not exist.
+        RootNetworkDoesNotExist,
+        /// The user is trying to serve an axon which is not of type 4 (IPv4) or 6 (IPv6).
+        InvalidIpType,
+        /// An invalid IP address is passed to the serve function.
+        InvalidIpAddress,
+        /// An invalid port is passed to the serve function.
+        InvalidPort,
+        /// The hotkey is not registered in subnet
+        HotKeyNotRegisteredInSubNet,
+        /// The hotkey does not exists
+        HotKeyAccountNotExists,
+        /// The hotkey is not registered in any subnet.
+        HotKeyNotRegisteredInNetwork,
+        /// Request to stake, unstake or subscribe is made by a coldkey that is not associated with
+        /// the hotkey account.
+        NonAssociatedColdKey,
+        // StakeToWithdrawIsZero (deprecated, kept commented out for historical reference).
+        /// The caller does not have enought stake to perform this action.
+        NotEnoughStake,
+        /// The caller is requesting removing more stake than there exists in the staking account.
+        /// See: "[remove_stake()]".
+        NotEnoughStakeToWithdraw,
+        /// The caller is requesting to set weights but the caller has less than minimum stake
+        /// required to set weights (less than WeightsMinStake).
+        NotEnoughStakeToSetWeights,
+        /// The parent hotkey doesn't have enough own stake to set childkeys.
+        NotEnoughStakeToSetChildkeys,
+        /// The caller is requesting adding more stake than there exists in the coldkey account.
+        /// See: "[add_stake()]"
+        NotEnoughBalanceToStake,
+        /// The caller is trying to add stake, but for some reason the requested amount could not be
+        /// withdrawn from the coldkey account.
+        BalanceWithdrawalError,
+        /// Unsuccessfully withdraw, balance could be zero (can not make account exist) after
+        /// withdrawal.
+        ZeroBalanceAfterWithdrawn,
+        /// The caller is attempting to set non-self weights without being a permitted validator.
+        NeuronNoValidatorPermit,
+        /// The caller is attempting to set the weight keys and values but these vectors have
+        /// different size.
+        WeightVecNotEqualSize,
+        /// The caller is attempting to set weights with duplicate UIDs in the weight matrix.
+        DuplicateUids,
+        /// The caller is attempting to set weight to at least one UID that does not exist in the
+        /// metagraph.
+        UidVecContainInvalidOne,
+        /// The dispatch is attempting to set weights on chain with fewer elements than are allowed.
+        WeightVecLengthIsLow,
+        /// Number of registrations in this block exceeds the allowed number (i.e., exceeds the
+        /// subnet hyperparameter "max_regs_per_block").
+        TooManyRegistrationsThisBlock,
+        /// The caller is requesting registering a neuron which already exists in the active set.
+        HotKeyAlreadyRegisteredInSubNet,
+        /// The new hotkey is the same as old one
+        NewHotKeyIsSameWithOld,
+        /// The new hotkey has outstanding root claimable or non-zero root stake,
+        /// so the root rate-book cannot be merged without misallocating dividends.
+        NewHotKeyNotCleanForRootSwap,
+        /// The supplied PoW hash block is in the future or negative.
+        InvalidWorkBlock,
+        /// The supplied PoW hash block does not meet the network difficulty.
+        InvalidDifficulty,
+        /// The supplied PoW hash seal does not match the supplied work.
+        InvalidSeal,
+        /// The dispatch is attempting to set weights on chain with weight value exceeding the
+        /// configured max weight limit (currently `u16::MAX`).
+        MaxWeightExceeded,
+        /// The hotkey is attempting to become a delegate when the hotkey is already a delegate.
+        HotKeyAlreadyDelegate,
+        /// A transactor exceeded the rate limit for setting weights.
+        SettingWeightsTooFast,
+        /// A validator is attempting to set weights from a validator with incorrect weight version.
+        IncorrectWeightVersionKey,
+        /// An axon or prometheus serving exceeded the rate limit for a registered neuron.
+        ServingRateLimitExceeded,
+        /// The caller is attempting to set weights with more UIDs than allowed.
+        UidsLengthExceedUidsInSubNet, // 32
+        /// A transactor exceeded the rate limit for add network transaction.
+        NetworkTxRateLimitExceeded,
+        /// A transactor exceeded the rate limit for delegate transaction.
+        DelegateTxRateLimitExceeded,
+        /// A transactor exceeded the rate limit for setting or swapping hotkey.
+        HotKeySetTxRateLimitExceeded,
+        /// A transactor exceeded the rate limit for staking.
+        StakingRateLimitExceeded,
+        /// Registration is disabled.
+        SubNetRegistrationDisabled,
+        /// The number of registration attempts exceeded the allowed number in the interval.
+        TooManyRegistrationsThisInterval,
+        /// The hotkey is required to be the origin.
+        TransactorAccountShouldBeHotKey,
+        /// Faucet is disabled.
+        FaucetDisabled,
+        /// Not a subnet owner.
+        NotSubnetOwner,
+        /// Operation is not permitted on the root subnet.
+        RegistrationNotPermittedOnRootSubnet,
+        /// A root registrant must hold at least as much root stake as the seat it
+        /// would evict.
+        StakeTooLowForRoot,
+        /// All subnets are in the immunity period.
+        AllNetworksInImmunity,
+        /// Not enough balance to pay swapping hotkey.
+        NotEnoughBalanceToPaySwapHotKey,
+        /// Netuid does not match for setting root network weights.
+        NotRootSubnet,
+        /// Can not set weights for the root network.
+        CanNotSetRootNetworkWeights,
+        /// No neuron ID is available.
+        NoNeuronIdAvailable,
+        /// Delegate take is too low.
+        DelegateTakeTooLow,
+        /// Delegate take is too high.
+        DelegateTakeTooHigh,
+        /// No commit found for the provided hotkey+netuid combination when attempting to reveal the
+        /// weights.
+        NoWeightsCommitFound,
+        /// Committed hash does not equal the hashed reveal data.
+        InvalidRevealCommitHashNotMatch,
+        /// Attempting to call set_weights when commit/reveal is enabled
+        CommitRevealEnabled,
+        /// Attemtping to commit/reveal weights when disabled.
+        CommitRevealDisabled,
+        /// Attempting to set alpha high/low while disabled
+        LiquidAlphaDisabled,
+        /// Alpha high is too low: alpha_high > 0.8
+        AlphaHighTooLow,
+        /// Alpha low is out of range: alpha_low > 0 && alpha_low < 0.8
+        AlphaLowOutOfRange,
+        /// The coldkey has already been swapped
+        ColdKeyAlreadyAssociated,
+        /// The coldkey balance is not enough to pay for the swap
+        NotEnoughBalanceToPaySwapColdKey,
+        /// Attempting to set an invalid child for a hotkey on a network.
+        InvalidChild,
+        /// Duplicate child when setting children.
+        DuplicateChild,
+        /// Proportion overflow when setting children.
+        ProportionOverflow,
+        /// Too many children MAX 5.
+        TooManyChildren,
+        /// Default transaction rate limit exceeded.
+        TxRateLimitExceeded,
+        /// Coldkey swap announcement not found
+        ColdkeySwapAnnouncementNotFound,
+        /// Coldkey swap too early.
+        ColdkeySwapTooEarly,
+        /// Coldkey swap reannounced too early.
+        ColdkeySwapReannouncedTooEarly,
+        /// The announced coldkey hash does not match the new coldkey hash.
+        AnnouncedColdkeyHashDoesNotMatch,
+        /// Coldkey swap already disputed
+        ColdkeySwapAlreadyDisputed,
+        /// New coldkey is hotkey
+        NewColdKeyIsHotkey,
+        /// Childkey take is invalid.
+        InvalidChildkeyTake,
+        /// Childkey take rate limit exceeded.
+        TxChildkeyTakeRateLimitExceeded,
+        /// Invalid identity.
+        InvalidIdentity,
+        /// Subnet mechanism does not exist.
+        MechanismDoesNotExist,
+        /// Trying to unstake or re-lock the locked amount.
+        StakeUnavailable,
+        /// Trying to perform action on non-existent subnet.
+        SubnetNotExists,
+        /// Maximum commit limit reached
+        TooManyUnrevealedCommits,
+        /// Attempted to reveal weights that are expired.
+        ExpiredWeightCommit,
+        /// Attempted to reveal weights too early.
+        RevealTooEarly,
+        /// Attempted to batch reveal weights with mismatched vector input lenghts.
+        InputLengthsUnequal,
+        /// A transactor exceeded the rate limit for setting weights.
+        CommittingWeightsTooFast,
+        /// Stake amount is too low.
+        AmountTooLow,
+        /// Not enough liquidity.
+        InsufficientLiquidity,
+        /// Slippage is too high for the transaction.
+        SlippageTooHigh,
+        /// Subnet disallows transfer.
+        TransferDisallowed,
+        /// Activity cutoff is being set too low.
+        ActivityCutoffTooLow,
+        /// Call is disabled
+        CallDisabled,
+        /// FirstEmissionBlockNumber is already set.
+        FirstEmissionBlockNumberAlreadySet,
+        /// need wait for more blocks to accept the start call extrinsic.
+        NeedWaitingMoreBlocksToStarCall,
+        /// Not enough AlphaOut on the subnet to recycle
+        NotEnoughAlphaOutToRecycle,
+        /// Cannot burn or recycle TAO from root subnet
+        CannotBurnOrRecycleOnRootSubnet,
+        /// Public key cannot be recovered.
+        UnableToRecoverPublicKey,
+        /// Recovered public key is invalid.
+        InvalidRecoveredPublicKey,
+        /// SubToken disabled now
+        SubtokenDisabled,
+        /// Too frequent hotkey swap on subnet
+        HotKeySwapOnSubnetIntervalNotPassed,
+        /// `keep_stake` hotkey swap refused because the old hotkey still has
+        /// standing miner collateral. Stake would stay on the old key while
+        /// the UID moves, stranding the bond. Swap with `keep_stake=false` so
+        /// collateral migrates with the UID (lineage maps track the rename).
+        KeepStakeBlockedByCollateral,
+        /// Invalid netuid duplication
+        SameNetuid,
+        /// The caller does not have enough TAO balance for the operation.
+        InsufficientTaoBalance,
+        /// Invalid lease beneficiary to register the leased network.
+        InvalidLeaseBeneficiary,
+        /// Lease cannot end in the past.
+        LeaseCannotEndInThePast,
+        /// Couldn't find the lease netuid.
+        LeaseNetuidNotFound,
+        /// Lease does not exist.
+        LeaseDoesNotExist,
+        /// Lease has no end block.
+        LeaseHasNoEndBlock,
+        /// Lease has not ended.
+        LeaseHasNotEnded,
+        /// An overflow occurred.
+        Overflow,
+        /// Beneficiary does not own hotkey.
+        BeneficiaryDoesNotOwnHotkey,
+        /// Expected beneficiary origin.
+        ExpectedBeneficiaryOrigin,
+        /// Admin operation is prohibited during the protected weights window
+        AdminActionProhibitedDuringWeightsWindow,
+        /// Symbol does not exist.
+        SymbolDoesNotExist,
+        /// Symbol already in use.
+        SymbolAlreadyInUse,
+        /// Incorrect commit-reveal version.
+        IncorrectCommitRevealVersion,
+        /// Reveal round is older than the most recently stored DRAND round.
+        InvalidRevealRound,
+        /// Reveal period is too large.
+        RevealPeriodTooLarge,
+        /// Reveal period is too small.
+        RevealPeriodTooSmall,
+        /// Generic error for out-of-range parameter value
+        InvalidValue,
+        /// Subnet limit reached & there is no eligible subnet to prune
+        SubnetLimitReached,
+        /// Insufficient funds to meet the subnet lock cost
+        CannotAffordLockCost,
+        /// exceeded the rate limit for associating an EVM key.
+        EvmKeyAssociateRateLimitExceeded,
+        /// The EVM address already has the maximum number of associated UIDs on this subnet.
+        EvmKeyAssociationLimitExceeded,
+        /// Same auto stake hotkey already set
+        SameAutoStakeHotkeyAlreadySet,
+        /// The UID map for the subnet could not be cleared
+        UidMapCouldNotBeCleared,
+        /// Trimming would exceed the max immune neurons percentage
+        TrimmingWouldExceedMaxImmunePercentage,
+        /// Violating the rules of Childkey-Parentkey consistency
+        ChildParentInconsistency,
+        /// Invalid value of root claim threshold
+        InvalidRootClaimThreshold,
+        /// The maximum allowed UIDs times mechanism count should not exceed 256.
+        TooManyUIDsPerMechanism,
+        /// Voting power tracking is not enabled for this subnet.
+        VotingPowerTrackingNotEnabled,
+        /// Invalid voting power EMA alpha value (must be <= 10^18).
+        InvalidVotingPowerEmaAlpha,
+        /// Deprecated call.
+        Deprecated,
+        /// Subnet buyback exceeded the operation rate limit
+        SubnetBuybackRateLimitExceeded,
+        /// Network already in dissolved queue
+        NetworkDissolveAlreadyQueued,
+        /// "Add stake and burn" exceeded the operation rate limit
+        AddStakeBurnRateLimitExceeded,
+        /// A coldkey swap has been announced for this account.
+        ColdkeySwapAnnounced,
+        /// A coldkey swap for this account is under dispute.
+        ColdkeySwapDisputed,
+        /// Coldkey swap clear too early.
+        ColdkeySwapClearTooEarly,
+        /// Disabled temporarily.
+        DisabledTemporarily,
+        /// Registration Price Limit Exceeded
+        RegistrationPriceLimitExceeded,
+        /// Lock hotkey mismatch: existing lock is for a different hotkey.
+        LockHotkeyMismatch,
+        /// Insufficient stake on subnet to cover the lock amount.
+        InsufficientStakeForLock,
+        /// No existing lock found for the given coldkey and subnet.
+        NoExistingLock,
+        /// There is already an active lock for the given coldkey.
+        ActiveLockExists,
+        /// A system account cannot be used in this operation
+        CannotUseSystemAccount,
+        /// Trying to unlock more than locked
+        UnlockAmountTooHigh,
+        /// Waiting for dissolved subnet cleanup.
+        WaitingForDissolvedSubnetCleanup,
+        /// The supplied tempo is outside the allowed range.
+        TempoOutOfBounds,
+        /// The supplied activity-cutoff factor is outside the allowed range.
+        ActivityCutoffFactorMilliOutOfBounds,
+        /// An epoch trigger is already pending for this subnet; wait for it to fire
+        /// before triggering again.
+        EpochTriggerAlreadyPending,
+        /// The next automatic epoch is already imminent; a manual trigger would have
+        /// no effect.
+        AutoEpochAlreadyImminent,
+        /// `trigger_epoch` is blocked because commit-reveal is enabled for this subnet:
+        /// an out-of-band epoch would desync the CRv3 reveal window from the wall-clock
+        /// Drand schedule and silently drop committed weights.
+        DynamicTempoBlockedByCommitReveal,
+        /// The destination coldkey rejects incoming locked alpha.
+        AccountRejectsLockedAlpha,
+        /// The coldkey has already registered too many subnets
+        LockIdOverFlow,
+        /// Need to wait more blocks to do the start call.
+        StartCallNotReady,
+        /// The caller does not have enough Alpha stake for the operation.
+        InsufficientAlphaBalance,
+        /// Coldkey swap could not fully migrate miner collateral: the old
+        /// coldkey's [`ColdkeyMinerCollateral`] aggregate remained non-zero
+        /// after migrating every indexed collateral hotkey. Failing closed
+        /// avoids under-locking the destination unstake guard.
+        ColdkeyCollateralIncomplete,
+        /// This coldkey already has the maximum number of distinct hotkeys
+        /// with miner collateral on the subnet
+        /// ([`crate::MAX_COLDKEY_COLLATERAL_HOTKEYS`]).
+        ColdkeyCollateralPositionsFull,
+        /// Retired (kept for SCALE index stability): direct basket deposits into a fund
+        /// with no holdings are held as the fund's root (TAO cash) slot instead of
+        /// erroring.
+        BasketHasNoWeights,
+        /// Root (netuid 0) stake is still within its `RootStakeUnlockInterval` hold window
+        /// (measured from the last root stake add/remove/claim for that coldkey/hotkey) and
+        /// cannot leave root yet. Prevents epoch-boundary just-in-time dividend sniping.
+        RootStakeLocked,
+        /// The `migrate_seed_beta_basket_v2` seed has not completed. Basket deposits, claims,
+        /// coldkey / root-touching hotkey swaps, and root stake add/remove/transfer/swap are
+        /// paused until it finishes so snapshotted conversion cannot desync from live stake
+        /// (`Σ owed == BasketShares`).
+        BetaBasketSeedInProgress,
+        /// Retired (kept for SCALE index stability): the `set_root_weights` extrinsic and
+        /// its network-wide gate were removed. Funds have no target vector; dividends
+        /// accumulate in place and composition changes only through `swap_basket`.
+        RootWeightSettingDisabled,
+        /// A root claim would process more root hotkeys and basket rows than the
+        /// fixed admission envelope. Use
+        /// `claim_root_with_hotkey` per validator so admission weight matches
+        /// the holdings actually walked.
+        RootClaimTooHeavy,
+        /// Retired (kept for SCALE index stability on the 463 testnet/devnet runtime):
+        /// `set_root_weights` concentration cap. The live guard is
+        /// [`Error::BasketConcentrationCapExceeded`].
+        RootWeightCapExceeded,
+        /// A queued root-dividend deposit could not be settled. Operations which change
+        /// the hotkey's root claimant base must retry after the deposit becomes executable.
+        BasketDepositPending,
+        /// A per-subnet weight batch is empty or has more items than there are networks.
+        InvalidBatchLength,
+        /// The destination coldkey already stakes through the maximum number of hotkeys
+        /// that third-party transfers may add, or the signer's own `StakingHotkeys` list is
+        /// at its cap. Staking to a hotkey the coldkey already stakes through is still
+        /// accepted.
+        TooManyStakingHotkeys,
+        /// The coldkey stakes through more hotkeys, or holds more stake positions, than a
+        /// coldkey swap can move in one call. Consolidate (unstake or move stake) first.
+        ColdkeySwapTooHeavy,
+        /// A `swap_basket` buy would leave the destination holding above
+        /// [`crate::BasketConcentrationCap`] of fund NAV (holdings marked at realizable
+        /// value). With the cap at 1/16 a traded fund must spread across at least 16
+        /// holdings. Not enforced while the chain has fewer subnets than the cap demands.
+        BasketConcentrationCapExceeded,
+        /// `swap_basket` is disabled network-wide ([`crate::BasketTradingEnabled`] is false).
+        BasketTradingDisabled,
+        /// Basket trading is frozen for this validator hotkey by governance
+        /// ([`crate::BasketTradingFrozen`]).
+        BasketTradingFrozen,
+        /// The trade would push more TAO through the fund than its turnover bucket holds
+        /// ([`crate::BasketDailyTurnoverCap`] of fund NAV, refilling over
+        /// [`crate::BASKET_TRADE_REFILL_BLOCKS`]). Wait for the bucket to refill or trade
+        /// a smaller amount.
+        BasketTurnoverBudgetExceeded,
+        /// `swap_basket` origin and destination are the same subnet.
+        BasketSameSubnet,
+        /// The trade would leave the fund holding more of the destination subnet than
+        /// [`crate::BasketLiquidityCap`] allows as a share of that subnet's alpha reserve.
+        /// Trade a smaller amount or pick a deeper pool.
+        BasketLiquidityCapExceeded,
+        /// The `swap_basket` buy leg credited less than the caller's `min_amount_out`
+        /// (destination alpha, or TAO when the destination is root). The trade rolled
+        /// back. Re-quote and retry, or lower the floor.
+        BasketMinOutNotMet,
+        /// A `swap_basket_many` call contained no trade legs. Submit at least one leg;
+        /// the bounded call argument enforces the maximum at decode time.
+        BasketSwapBatchEmpty,
+        /// Ciphertext exceeds the selected consensus mode's payload limit.
+        CommitPayloadTooLarge,
+        /// The subnet's shared Null timelock queue has reached its byte or count budget.
+        CommitQueueFull,
+    }
+}

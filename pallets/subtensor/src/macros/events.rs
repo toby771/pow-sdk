@@ -1,0 +1,911 @@
+use frame_support::pallet_macros::pallet_section;
+
+/// A [`pallet_section`] that defines the events for a pallet.
+/// This can later be imported into the pallet using [`import_section`].
+#[pallet_section]
+mod events {
+    use codec::Compact;
+
+    #[pallet::event]
+    #[pallet::generate_deposit(pub(super) fn deposit_event)]
+    pub enum Event<T: Config> {
+        /// a new network is added.
+        NetworkAdded(NetUid, u16),
+        /// a network is removed.
+        NetworkRemoved(NetUid),
+        /// stake has been transferred from the a coldkey account onto the hotkey staking account.
+        StakeAdded(
+            T::AccountId,
+            T::AccountId,
+            TaoBalance,
+            AlphaBalance,
+            NetUid,
+            u64,
+        ),
+        /// stake has been removed from the hotkey staking account onto the coldkey account.
+        StakeRemoved(
+            T::AccountId,
+            T::AccountId,
+            TaoBalance,
+            AlphaBalance,
+            NetUid,
+            u64,
+        ),
+        /// stake has been moved from origin (hotkey, subnet ID) to destination (hotkey, subnet ID) of this amount (in TAO).
+        StakeMoved(
+            T::AccountId,
+            T::AccountId,
+            NetUid,
+            T::AccountId,
+            NetUid,
+            TaoBalance,
+        ),
+        /// a caller successfully sets their weights on a subnetwork.
+        WeightsSet(NetUidStorageIndex, u16),
+        /// Retired (kept for SCALE index stability): emitted by the removed
+        /// `set_root_weights` extrinsic. Never emitted on current runtimes.
+        RootWeightsSet(u16),
+        /// a new neuron account has been registered to the chain.
+        NeuronRegistered(NetUid, u16, T::AccountId),
+        /// multiple uids have been concurrently registered.
+        BulkNeuronsRegistered(u16, u16),
+        // FIXME: Not used yet.
+        /// bulk balances have been set (placeholder: this event is currently unused).
+        BulkBalancesSet(u16, u16),
+        /// max allowed uids has been set for a subnetwork.
+        MaxAllowedUidsSet(NetUid, u16),
+        /// max weight limit has been set for a subnet (deprecated: this event is unused).
+        #[deprecated(note = "Max weight limit is now a constant and this event is unused")]
+        MaxWeightLimitSet(NetUid, u16),
+        /// the difficulty has been set for a subnet.
+        DifficultySet(NetUid, u64),
+        /// the adjustment interval is set for a subnet.
+        AdjustmentIntervalSet(NetUid, u16),
+        /// registration per interval is set for a subnet.
+        RegistrationPerIntervalSet(NetUid, u16),
+        /// we set max registrations per block.
+        MaxRegistrationsPerBlockSet(NetUid, u16),
+        /// an activity cutoff is set for a subnet.
+        ActivityCutoffSet(NetUid, u16),
+        /// Rho value is set.
+        RhoSet(NetUid, u16),
+        /// steepness of the sigmoid used to compute alpha values.
+        AlphaSigmoidSteepnessSet(NetUid, i16),
+        /// Kappa is set for a subnet.
+        KappaSet(NetUid, u16),
+        /// minimum allowed weight is set for a subnet.
+        MinAllowedWeightSet(NetUid, u16),
+        /// the validator pruning length has been set.
+        ValidatorPruneLenSet(NetUid, u64),
+        /// the scaling law power has been set for a subnet.
+        ScalingLawPowerSet(NetUid, u16),
+        /// weights set rate limit has been set for a subnet.
+        WeightsSetRateLimitSet(NetUid, u64),
+        /// immunity period is set for a subnet.
+        ImmunityPeriodSet(NetUid, u16),
+        /// bonds moving average is set for a subnet.
+        BondsMovingAverageSet(NetUid, u64),
+        /// bonds penalty is set for a subnet.
+        BondsPenaltySet(NetUid, u16),
+        /// bonds reset is set for a subnet.
+        BondsResetOnSet(NetUid, bool),
+        /// setting the max number of allowed validators on a subnet.
+        MaxAllowedValidatorsSet(NetUid, u16),
+        /// the axon server information is added to the network.
+        AxonServed(NetUid, T::AccountId),
+        /// the prometheus server information is added to the network.
+        PrometheusServed(NetUid, T::AccountId),
+        /// a hotkey has become a delegate.
+        DelegateAdded(T::AccountId, T::AccountId, PerU16),
+        /// the default take is set.
+        DefaultTakeSet(PerU16),
+        /// weights version key is set for a network.
+        WeightsVersionKeySet(NetUid, u64),
+        /// setting min difficulty on a network.
+        MinDifficultySet(NetUid, u64),
+        /// setting max difficulty on a network.
+        MaxDifficultySet(NetUid, u64),
+        /// setting the prometheus serving rate limit.
+        ServingRateLimitSet(NetUid, u64),
+        /// setting burn on a network.
+        BurnSet(NetUid, TaoBalance),
+        /// setting max burn on a network.
+        MaxBurnSet(NetUid, TaoBalance),
+        /// setting min burn on a network.
+        MinBurnSet(NetUid, TaoBalance),
+        /// setting the per-block epoch cap (dynamic tempo throttle).
+        MaxEpochsPerBlockSet(u8),
+        /// setting the transaction rate limit.
+        TxRateLimitSet(u64),
+        /// setting the delegate take transaction rate limit.
+        TxDelegateTakeRateLimitSet(u64),
+        /// setting the childkey take transaction rate limit.
+        TxChildKeyTakeRateLimitSet(u64),
+        /// setting the admin freeze window length (last N blocks of tempo)
+        AdminFreezeWindowSet(u16),
+        /// setting the owner hyperparameter rate limit in epochs
+        OwnerHyperparamRateLimitSet(u16),
+        /// minimum childkey take set
+        MinChildKeyTakeSet(PerU16),
+        /// subnet-specific minimum childkey take set
+        MinChildKeyTakePerSubnetSet(NetUid, PerU16),
+        /// maximum childkey take set
+        MaxChildKeyTakeSet(PerU16),
+        /// childkey take set
+        ChildKeyTakeSet(T::AccountId, PerU16),
+        /// a sudo call is done.
+        Sudid(DispatchResult),
+        /// registration is allowed/disallowed for a subnet.
+        RegistrationAllowed(NetUid, bool),
+        /// POW registration is allowed/disallowed for a subnet.
+        PowRegistrationAllowed(NetUid, bool),
+        /// setting tempo on a network
+        TempoSet(NetUid, u16),
+        /// setting the RAO recycled for registration.
+        RAORecycledForRegistrationSet(NetUid, TaoBalance),
+        /// min stake is set for validators to set weights.
+        StakeThresholdSet(u64),
+        /// setting the adjustment alpha on a subnet.
+        AdjustmentAlphaSet(NetUid, u64),
+        /// the faucet it called on the test net.
+        Faucet(T::AccountId, u64),
+        /// the subnet owner cut is set.
+        SubnetOwnerCutSet(u16),
+        /// the network creation rate limit is set.
+        NetworkRateLimitSet(u64),
+        /// the network immunity period is set.
+        NetworkImmunityPeriodSet(u64),
+        /// the start call delay is set.
+        StartCallDelaySet(u64),
+        /// the network minimum locking cost is set.
+        NetworkMinLockCostSet(TaoBalance),
+        /// the maximum number of subnets is set
+        SubnetLimitSet(u16),
+        /// the lock cost reduction is set
+        NetworkLockCostReductionIntervalSet(u64),
+        /// the take for a delegate is decreased.
+        TakeDecreased(T::AccountId, T::AccountId, PerU16),
+        /// the take for a delegate is increased.
+        TakeIncreased(T::AccountId, T::AccountId, PerU16),
+        /// the hotkey is swapped
+        HotkeySwapped {
+            /// the account ID of coldkey
+            coldkey: T::AccountId,
+            /// the account ID of old hotkey
+            old_hotkey: T::AccountId,
+            /// the account ID of new hotkey
+            new_hotkey: T::AccountId,
+        },
+        /// maximum delegate take is set by sudo/admin transaction
+        MaxDelegateTakeSet(PerU16),
+        /// minimum delegate take is set by sudo/admin transaction
+        MinDelegateTakeSet(PerU16),
+        /// A coldkey swap announcement has been made.
+        ColdkeySwapAnnounced {
+            /// The account ID of the coldkey that made the announcement.
+            who: T::AccountId,
+            /// The hash of the new coldkey.
+            new_coldkey_hash: T::Hash,
+        },
+        /// A coldkey swap has been reset.
+        ColdkeySwapReset {
+            /// The account ID of the coldkey for which the swap has been reset.
+            who: T::AccountId,
+        },
+        /// A coldkey has been swapped.
+        ColdkeySwapped {
+            /// The account ID of old coldkey.
+            old_coldkey: T::AccountId,
+            /// The account ID of new coldkey.
+            new_coldkey: T::AccountId,
+        },
+        /// A coldkey swap has been disputed.
+        ColdkeySwapDisputed {
+            /// The account ID of the coldkey that was disputed.
+            coldkey: T::AccountId,
+        },
+        /// All balance of a hotkey has been unstaked and transferred to a new coldkey
+        AllBalanceUnstakedAndTransferredToNewColdkey {
+            /// The account ID of the current coldkey
+            current_coldkey: T::AccountId,
+            /// The account ID of the new coldkey
+            new_coldkey: T::AccountId,
+            /// The total balance of the hotkey
+            total_balance: <<T as Config>::Currency as fungible::Inspect<
+                <T as frame_system::Config>::AccountId,
+            >>::Balance,
+        },
+        /// The arbitration period has been extended
+        ArbitrationPeriodExtended {
+            /// The account ID of the coldkey
+            coldkey: T::AccountId,
+        },
+        /// Setting of children of a hotkey have been scheduled
+        SetChildrenScheduled(T::AccountId, NetUid, u64, Vec<(u64, T::AccountId)>),
+        /// The children of a hotkey have been set
+        SetChildren(T::AccountId, NetUid, Vec<(u64, T::AccountId)>),
+        // /// The hotkey emission tempo has been set
+        // HotkeyEmissionTempoSet(u64),
+        // /// The network maximum stake has been set
+        // NetworkMaxStakeSet(u16, u64),
+        /// The identity of a coldkey has been set
+        ChainIdentitySet(T::AccountId),
+        /// The identity of a subnet has been set
+        SubnetIdentitySet(NetUid),
+        /// The identity of a subnet has been removed
+        SubnetIdentityRemoved(NetUid),
+        /// A dissolve network extrinsic scheduled.
+        DissolveNetworkScheduled {
+            /// The account ID schedule the dissolve network extrinsic
+            account: T::AccountId,
+            /// network ID will be dissolved
+            netuid: NetUid,
+            /// extrinsic execution block number
+            execution_block: BlockNumberFor<T>,
+        },
+        /// The coldkey swap announcement delay has been set.
+        ColdkeySwapAnnouncementDelaySet(BlockNumberFor<T>),
+        /// The coldkey swap reannouncement delay has been set.
+        ColdkeySwapReannouncementDelaySet(BlockNumberFor<T>),
+        /// The duration of dissolve network has been set
+        DissolveNetworkScheduleDurationSet(BlockNumberFor<T>),
+        /// Commit-reveal v3 weights have been successfully committed.
+        ///
+        /// * **who**: The account ID of the user committing the weights.
+        /// * **netuid**: The network identifier.
+        /// * **commit_hash**: The hash representing the committed weights.
+        CRV3WeightsCommitted(T::AccountId, NetUidStorageIndex, H256),
+        /// Weights have been successfully committed.
+        ///
+        /// * **who**: The account ID of the user committing the weights.
+        /// * **netuid**: The network identifier.
+        /// * **commit_hash**: The hash representing the committed weights.
+        WeightsCommitted(T::AccountId, NetUidStorageIndex, H256),
+
+        /// Weights have been successfully revealed.
+        ///
+        /// * **who**: The account ID of the user revealing the weights.
+        /// * **netuid**: The network identifier.
+        /// * **commit_hash**: The hash of the revealed weights.
+        WeightsRevealed(T::AccountId, NetUidStorageIndex, H256),
+
+        /// Weights have been successfully batch revealed.
+        ///
+        /// * **who**: The account ID of the user revealing the weights.
+        /// * **netuid**: The network identifier.
+        /// * **revealed_hashes**: A vector of hashes representing each revealed weight set.
+        WeightsBatchRevealed(T::AccountId, NetUid, Vec<H256>),
+
+        /// A batch of weights (or commits) have been force-set.
+        ///
+        /// * **netuids**: The netuids these weights were successfully set/committed for.
+        /// * **who**: The hotkey that set this batch.
+        BatchWeightsCompleted(Vec<Compact<NetUid>>, T::AccountId),
+
+        /// A batch extrinsic completed but with some errors.
+        BatchCompletedWithErrors(),
+
+        /// A weight set among a batch of weights failed.
+        ///
+        /// * **netuid**: The netuid of the batch item that failed.
+        /// * **error**: The dispatch error emitted by the failed item.
+        BatchWeightItemFailed(NetUid, sp_runtime::DispatchError),
+
+        /// Stake has been transferred from one coldkey to another on the same subnet.
+        /// Parameters:
+        /// (origin_coldkey, destination_coldkey, hotkey, origin_netuid, destination_netuid, amount)
+        StakeTransferred(
+            T::AccountId,
+            T::AccountId,
+            T::AccountId,
+            NetUid,
+            NetUid,
+            TaoBalance,
+        ),
+
+        /// Stake has been swapped from one subnet to another for the same coldkey-hotkey pair.
+        ///
+        /// Parameters:
+        /// (coldkey, hotkey, origin_netuid, destination_netuid, amount)
+        StakeSwapped(T::AccountId, T::AccountId, NetUid, NetUid, TaoBalance),
+
+        /// Event called when transfer is toggled on a subnet.
+        ///
+        /// Parameters:
+        /// (netuid, bool)
+        TransferToggle(NetUid, bool),
+
+        /// The owner hotkey for a subnet has been set.
+        ///
+        /// Parameters:
+        /// (netuid, new_hotkey)
+        SubnetOwnerHotkeySet(NetUid, T::AccountId),
+        /// FirstEmissionBlockNumber is set via start call extrinsic
+        ///
+        /// Parameters:
+        /// netuid
+        /// block number
+        FirstEmissionBlockNumberSet(NetUid, u64),
+
+        /// Alpha has been recycled, reducing AlphaOut on a subnet.
+        ///
+        /// Parameters:
+        /// (coldkey, hotkey, amount, subnet_id)
+        AlphaRecycled(T::AccountId, T::AccountId, AlphaBalance, NetUid),
+
+        /// Alpha have been burned without reducing AlphaOut.
+        ///
+        /// Parameters:
+        /// (coldkey, hotkey, amount, subnet_id)
+        AlphaBurned(T::AccountId, T::AccountId, AlphaBalance, NetUid),
+
+        /// An EVM key has been associated with a hotkey.
+        EvmKeyAssociated {
+            /// The subnet that the hotkey belongs to.
+            netuid: NetUid,
+            /// The hotkey associated with the EVM key.
+            hotkey: T::AccountId,
+            /// The EVM key being associated with the hotkey.
+            evm_key: H160,
+            /// The block where the association happened.
+            block_associated: u64,
+        },
+
+        /// CRV3 Weights have been successfully revealed.
+        ///
+        /// * **netuid**: The network identifier.
+        /// * **who**: The account ID of the user revealing the weights.
+        CRV3WeightsRevealed(NetUid, T::AccountId),
+
+        /// Commit-Reveal periods has been successfully set.
+        ///
+        /// * **netuid**: The network identifier.
+        /// * **periods**: The number of epochs before the reveal.
+        CommitRevealPeriodsSet(NetUid, u64),
+
+        /// Commit-Reveal has been successfully toggled.
+        ///
+        /// * **netuid**: The network identifier.
+        /// * **Enabled**: Is Commit-Reveal enabled.
+        CommitRevealEnabled(NetUid, bool),
+
+        /// the hotkey is swapped
+        HotkeySwappedOnSubnet {
+            /// the account ID of coldkey
+            coldkey: T::AccountId,
+            /// the account ID of old hotkey
+            old_hotkey: T::AccountId,
+            /// the account ID of new hotkey
+            new_hotkey: T::AccountId,
+            /// the subnet ID
+            netuid: NetUid,
+        },
+        /// A subnet lease has been created.
+        SubnetLeaseCreated {
+            /// The beneficiary of the lease.
+            beneficiary: T::AccountId,
+            /// The lease ID
+            lease_id: LeaseId,
+            /// The subnet ID
+            netuid: NetUid,
+            /// The end block of the lease
+            end_block: Option<BlockNumberFor<T>>,
+        },
+
+        /// A subnet lease has been terminated.
+        SubnetLeaseTerminated {
+            /// The beneficiary of the lease.
+            beneficiary: T::AccountId,
+            /// The subnet ID
+            netuid: NetUid,
+        },
+
+        /// The symbol for a subnet has been updated.
+        SymbolUpdated {
+            /// The subnet ID
+            netuid: NetUid,
+            /// The symbol that has been updated.
+            symbol: Vec<u8>,
+        },
+
+        /// Commit Reveal Weights version has been updated.
+        ///
+        /// * **version**: The required version.
+        CommitRevealVersionSet(u16),
+
+        /// Timelocked weights have been successfully committed.
+        ///
+        /// * **who**: The account ID of the user committing the weights.
+        /// * **netuid**: The network identifier.
+        /// * **commit_hash**: The hash representing the committed weights.
+        /// * **reveal_round**: The round at which weights can be revealed.
+        TimelockedWeightsCommitted(T::AccountId, NetUidStorageIndex, H256, u64),
+
+        /// Timelocked Weights have been successfully revealed.
+        ///
+        /// * **netuid**: The network identifier.
+        /// * **who**: The account ID of the user revealing the weights.
+        TimelockedWeightsRevealed(NetUidStorageIndex, T::AccountId),
+
+        /// Auto-staking hotkey received stake
+        AutoStakeAdded {
+            /// Subnet identifier.
+            netuid: NetUid,
+            /// Destination account that received the auto-staked funds.
+            destination: T::AccountId,
+            /// Hotkey account whose stake was auto-staked.
+            hotkey: T::AccountId,
+            /// Owner (coldkey) account associated with the hotkey.
+            owner: T::AccountId,
+            /// Amount of alpha auto-staked.
+            incentive: AlphaBalance,
+        },
+
+        /// End-of-epoch miner incentive alpha by UID
+        IncentiveAlphaEmittedToMiners {
+            /// Subnet identifier.
+            netuid: NetUidStorageIndex,
+            /// UID-indexed array of miner incentive alpha; index equals UID.
+            emissions: Vec<AlphaBalance>,
+        },
+
+        /// The minimum allowed UIDs for a subnet have been set.
+        MinAllowedUidsSet(NetUid, u16),
+
+        /// The auto stake destination has been set.
+        ///
+        /// * **coldkey**: The account ID of the coldkey.
+        /// * **netuid**: The network identifier.
+        /// * **hotkey**: The account ID of the hotkey.
+        AutoStakeDestinationSet {
+            /// The account ID of the coldkey.
+            coldkey: T::AccountId,
+            /// The network identifier.
+            netuid: NetUid,
+            /// The account ID of the hotkey.
+            hotkey: T::AccountId,
+        },
+
+        /// The minimum allowed non-Immune UIDs has been set.
+        MinNonImmuneUidsSet(NetUid, u16),
+        /// Root emissions have been claimed for a coldkey on all subnets and hotkeys.
+        RootClaimed {
+            /// Claim coldkey
+            coldkey: T::AccountId,
+            /// Total TAO realized across every per-validator redemption and staked on root.
+            tao: TaoBalance,
+        },
+
+        /// A validator's beta basket (fund) received a dividend deposit: the dividend alpha
+        /// was credited in place to the fund's holding on the subnet it was earned on,
+        /// adding `tao` of realizable NAV to the fund and minting `shares` fund shares at
+        /// the pre-deposit NAV.
+        BasketDeposited {
+            /// Validator hotkey whose basket received the deposit.
+            hotkey: T::AccountId,
+            /// Realizable NAV the deposit added to the fund (the origin holding's
+            /// realizable value after the credit minus before it).
+            tao: TaoBalance,
+            /// Fund shares minted at the pre-deposit NAV (grows `BasketShares`).
+            shares: u64,
+        },
+
+        /// A staker deposited TAO from their balance directly into a validator's beta
+        /// basket: the TAO was split across the fund's current holdings by value (or held
+        /// as the root cash slot of an empty fund) and `shares` fund shares were credited
+        /// to the staker via their claimed watermark.
+        BasketStakedIn {
+            /// Validator hotkey whose basket received the deposit.
+            hotkey: T::AccountId,
+            /// Depositing staker coldkey.
+            coldkey: T::AccountId,
+            /// TAO taken from the staker's balance.
+            tao: TaoBalance,
+            /// Realizable NAV the deposit added to the fund (the mint value basis; the
+            /// depositor bears their own entry slippage and fees).
+            value: TaoBalance,
+            /// Fund shares credited to the staker (grows `BasketShares`).
+            shares: u64,
+        },
+
+        /// A staker redeemed (claimed) their owed share of a validator's beta basket: their
+        /// pro-rata fraction of every holding was realized as `tao` and staked onto their root
+        /// position.
+        BasketClaimed {
+            /// Validator hotkey the basket belongs to.
+            hotkey: T::AccountId,
+            /// Staker coldkey that claimed.
+            coldkey: T::AccountId,
+            /// TAO realized and staked on root for the staker.
+            tao: TaoBalance,
+        },
+
+        /// A validator's basket holding on a dissolving subnet was converted into the fund's
+        /// root (TAO) slot. Fund shares and staker entitlements are unaffected.
+        BasketHoldingConverted {
+            /// Validator hotkey whose holding was converted.
+            hotkey: T::AccountId,
+            /// Subnet being dissolved.
+            netuid: NetUid,
+            /// TAO realized and held as the fund's root-slot position.
+            tao: TaoBalance,
+        },
+
+        /// Voting power tracking has been enabled for a subnet.
+        VotingPowerTrackingEnabled {
+            /// The subnet ID
+            netuid: NetUid,
+        },
+
+        /// Voting power tracking has been scheduled for disabling.
+        /// Tracking will continue until disable_at_block, then stop and clear entries.
+        VotingPowerTrackingDisableScheduled {
+            /// The subnet ID
+            netuid: NetUid,
+            /// Block at which tracking will be disabled
+            disable_at_block: u64,
+        },
+
+        /// Voting power tracking has been fully disabled and entries cleared.
+        VotingPowerTrackingDisabled {
+            /// The subnet ID
+            netuid: NetUid,
+        },
+
+        /// Voting power EMA alpha has been set for a subnet.
+        VotingPowerEmaAlphaSet {
+            /// The subnet ID
+            netuid: NetUid,
+            /// The new alpha value (u64 with 18 decimal precision)
+            alpha: u64,
+        },
+
+        /// Subnet lease dividends have been distributed.
+        SubnetLeaseDividendsDistributed {
+            /// The lease ID
+            lease_id: LeaseId,
+            /// The contributor
+            contributor: T::AccountId,
+            /// The amount of alpha distributed
+            alpha: AlphaBalance,
+        },
+
+        /// "Add stake and burn" event: alpha token was purchased and burned.
+        AddStakeBurn {
+            /// The subnet ID
+            netuid: NetUid,
+            /// hotky account ID
+            hotkey: T::AccountId,
+            /// Tao provided
+            amount: TaoBalance,
+            /// Alpha burned
+            alpha: AlphaBalance,
+        },
+
+        /// data for a dissolved network has been cleaned up.
+        NetworkDissolveCleanupCompleted {
+            /// The subnet ID
+            netuid: NetUid,
+        },
+
+        /// A coldkey swap announcement has been cleared.
+        ColdkeySwapCleared {
+            /// The account ID of the coldkey that cleared the announcement.
+            who: T::AccountId,
+        },
+
+        /// Transaction fee was paid in Alpha.
+        ///
+        /// Emitted in addition to `TransactionFeePaid` when the fee payment path is Alpha.
+        /// `alpha_fee` is the exact Alpha amount sold; `tao_amount` is the TAO the call was
+        /// finally charged. Since spec 469 the TAO the call did not use is refunded to the
+        /// payer's free balance, so `tao_amount` can be below what the sale realised.
+        TransactionFeePaidWithAlpha {
+            /// Account that paid the transaction fee.
+            who: T::AccountId,
+            /// Netuid
+            netuid: NetUid,
+            /// Exact fee deducted in Alpha units.
+            alpha_fee: AlphaBalance,
+            /// TAO charged for the call, net of the post-dispatch refund.
+            tao_amount: TaoBalance,
+        },
+        /// Burn half-life set for neuron registration.
+        BurnHalfLifeSet {
+            /// The subnet identifier.
+            netuid: NetUid,
+            /// The burn half-life value for neuron registration.
+            burn_half_life: u16,
+        },
+
+        /// Burn increase multiplier set for neuron registration.
+        BurnIncreaseMultSet {
+            /// The subnet identifier.
+            netuid: NetUid,
+            /// The burn increase multiplier value for neuron registration.
+            burn_increase_mult: U64F64,
+        },
+
+        /// A root validator toggled the "auto parent delegation" flag.
+        AutoParentDelegationEnabledSet {
+            /// The validator hotkey.
+            hotkey: T::AccountId,
+            /// Whether delegation is now enabled.
+            enabled: bool,
+        },
+
+        /// Stake has been locked to a hotkey on a subnet.
+        StakeLocked {
+            /// The coldkey that locked the stake.
+            coldkey: T::AccountId,
+            /// The hotkey the stake is locked to.
+            hotkey: T::AccountId,
+            /// The subnet the stake is locked on.
+            netuid: NetUid,
+            /// The alpha amount locked.
+            amount: AlphaBalance,
+        },
+
+        /// Stake has been unlocked from a hotkey on a subnet.
+        StakeUnlocked {
+            /// The coldkey that unlocked the stake.
+            coldkey: T::AccountId,
+            /// The hotkey the stake was locked to.
+            hotkey: T::AccountId,
+            /// The subnet the stake was locked on.
+            netuid: NetUid,
+            /// The alpha amount unlocked.
+            amount: AlphaBalance,
+        },
+
+        /// Stake has been unlocked from a hotkey on a subnet.
+        LockMoved {
+            /// The coldkey that moved the lock.
+            coldkey: T::AccountId,
+            /// The hotkey the lock was moved from.
+            origin_hotkey: T::AccountId,
+            /// The hotkey the lock was moved to.
+            destination_hotkey: T::AccountId,
+            /// The subnet the lock is on.
+            netuid: NetUid,
+        },
+
+        /// Activity-cutoff factor (per-mille) set on a subnet by its owner.
+        ActivityCutoffFactorMilliSet {
+            /// The subnet identifier.
+            netuid: NetUid,
+            /// Factor (per-mille).
+            factor_milli: u32,
+        },
+
+        /// Owner manually triggered an epoch for their subnet.
+        EpochTriggered {
+            /// The subnet identifier.
+            netuid: NetUid,
+            /// The account that triggered the epoch.
+            by: T::AccountId,
+            /// The earliest block at which the triggered epoch may execute.
+            fires_at: u64,
+        },
+
+        /// An epoch slot was deferred to the next block due to the per-block epoch cap.
+        EpochDeferred {
+            /// The subnet identifier.
+            netuid: NetUid,
+            /// Block at which the epoch was originally scheduled.
+            from_block: u64,
+            /// Block to which the epoch was deferred.
+            to_block: u64,
+        },
+
+        /// Epoch execution skipped by `is_epoch_input_state_consistent` returned false or other errors.
+        EpochSkipped {
+            /// The subnet identifier.
+            netuid: NetUid,
+            /// The block at which the slot was consumed.
+            block: u64,
+        },
+
+        /// Subnet ownership was reassigned by lock conviction.
+        SubnetOwnerChanged {
+            /// The subnet whose owner changed.
+            netuid: NetUid,
+            /// The previous owner coldkey.
+            old_coldkey: T::AccountId,
+            /// The new owner coldkey.
+            new_coldkey: T::AccountId,
+        },
+
+        /// A coldkey's perpetual lock flag was updated.
+        PerpetualLockUpdated {
+            /// The coldkey whose flag changed.
+            coldkey: T::AccountId,
+            /// The subnet whose coldkey flag changed.
+            netuid: NetUid,
+            /// Whether this coldkey's locks are now perpetual.
+            enabled: bool,
+        },
+
+        /// A network registration cost has been queued.
+        NetworkRegistrationQueued {
+            /// The network registration information.
+            coldkey: T::AccountId,
+            /// The hotkey that registered the network.
+            hotkey: T::AccountId,
+            /// The mechanism that registered the network.
+            mechid: u16,
+            /// The identity that registered the network.
+            identity: Option<SubnetIdentityOfV3>,
+            /// The lock amount that registered the network.
+            lock_amount: TaoBalance,
+            /// The median subnet alpha price that registered the network.
+            median_subnet_alpha_price: U64F64,
+            /// The block at which the network was registered.
+            registration_block: u64,
+        },
+
+        /// A coldkey's reject locked alpha account flag was updated.
+        RejectLockedAlphaUpdated {
+            /// The coldkey whose flag changed.
+            coldkey: T::AccountId,
+            /// Whether this coldkey rejects incoming locked alpha.
+            enabled: bool,
+        },
+
+        /// Stake has been transferred from one coldkey to another, landing on a
+        /// different hotkey (and optionally a different subnet).
+        StakeAndHotkeyTransferred {
+            /// The coldkey the stake left.
+            origin_coldkey: T::AccountId,
+            /// The coldkey that now owns the stake.
+            destination_coldkey: T::AccountId,
+            /// The hotkey the stake left.
+            origin_hotkey: T::AccountId,
+            /// The hotkey the stake landed on.
+            destination_hotkey: T::AccountId,
+            /// The subnet the stake left.
+            origin_netuid: NetUid,
+            /// The subnet the stake landed on.
+            destination_netuid: NetUid,
+            /// The TAO-equivalent amount moved.
+            amount: TaoBalance,
+        },
+
+        /// Miner collateral was staked and locked (at registration or via
+        /// `add_collateral`). Appended at the end of the enum to avoid
+        /// shifting existing event indices.
+        CollateralLocked {
+            /// Subnet identifier.
+            netuid: NetUid,
+            /// The miner hotkey the collateral is attached to.
+            hotkey: T::AccountId,
+            /// Alpha locked by this operation.
+            locked: AlphaBalance,
+            /// Total alpha now locked for this hotkey on this subnet.
+            total_locked: AlphaBalance,
+        },
+
+        /// A miner set the self-maintaining collateral floor for a hotkey.
+        MinCollateralSet {
+            /// Subnet identifier.
+            netuid: NetUid,
+            /// The miner hotkey the floor applies to.
+            hotkey: T::AccountId,
+            /// The new floor; zero clears it.
+            min_locked: AlphaBalance,
+        },
+
+        /// A subnet's liquid-alpha consensus mode was updated.
+        /// Appended to preserve existing SCALE event indices.
+        LiquidAlphaConsensusModeSet(NetUid, ConsensusMode),
+
+        /// A fund's frozen display baseline was stamped at its first share mint: its
+        /// index-spliced display and total-return stake prices start at the current
+        /// index levels from this block on (see `BetaBaseline` storage). Appended to
+        /// preserve existing SCALE event indices.
+        BetaBaselineStamped {
+            /// Validator hotkey whose fund was stamped.
+            hotkey: T::AccountId,
+        },
+
+        /// A terminally untradeable basket alpha slice was explicitly written off. This is
+        /// distinct from a swap/transfer failure: only a pool too shallow to execute any sale
+        /// is eligible, and removing the exact slice preserves every holder's fund proportion.
+        /// Appended to preserve existing SCALE event indices.
+        BasketAlphaWrittenOff {
+            /// Validator hotkey whose basket held the alpha.
+            hotkey: T::AccountId,
+            /// Subnet whose pool was terminally too shallow.
+            netuid: NetUid,
+            /// Alpha removed from basket custody and recorded as burned.
+            alpha: AlphaBalance,
+        },
+
+        // New events are appended so existing SCALE event indices are preserved.
+        /// A contributor's lease dividends could not be transferred this interval. The amount
+        /// is recorded against that contributor and retried at the next distribution.
+        SubnetLeaseDividendSkipped {
+            /// The lease ID
+            lease_id: LeaseId,
+            /// The contributor
+            contributor: T::AccountId,
+            /// The total now owed to the contributor
+            alpha: AlphaBalance,
+        },
+
+        /// A share pool's denominator was rewritten to the sum of its live shares, so every
+        /// member is quoted exactly its fraction of the pool value.
+        SharePoolDenominatorReconciled {
+            /// The hotkey whose pool was reconciled.
+            hotkey: T::AccountId,
+            /// The subnet of the pool.
+            netuid: NetUid,
+        },
+
+        /// A validator rebalanced its beta basket: `alpha_sold` of `origin_netuid` was sold
+        /// for `tao_mid` TAO, which bought `alpha_bought` of `destination_netuid`. Fund
+        /// shares and staker entitlements are unaffected; only the fund's composition changed.
+        BasketSwapped {
+            /// Validator hotkey whose basket was rebalanced.
+            hotkey: T::AccountId,
+            /// Subnet sold out of (root = the fund's TAO slot).
+            origin_netuid: NetUid,
+            /// Subnet bought into (root = the fund's TAO slot).
+            destination_netuid: NetUid,
+            /// Alpha (or TAO when origin is root) removed from the origin holding.
+            alpha_sold: AlphaBalance,
+            /// TAO that passed through the middle of the swap; counted against the fund's
+            /// daily turnover budget.
+            tao_mid: TaoBalance,
+            /// Alpha (or TAO when destination is root) added to the destination holding.
+            alpha_bought: AlphaBalance,
+        },
+
+        /// A root claim skipped `rows` dust rows of the fund: rows whose whole holding was
+        /// worth less than `min(BasketClaimRowDustCapTao, BasketClaimRowDustBps × anchored
+        /// NAV)`, or whose slice for this claimant was worth less than
+        /// `BasketClaimSliceDustTao`, each worth at most `BasketClaimForfeitCapTao` for this
+        /// claimant, all at the anchored (fast-EMA-capped) mark. Those rows were neither sold
+        /// nor paid. The claim burned the whole entitlement, so the claimant's slices of those
+        /// rows — about `forfeited_tao_est` at the pre-sale realizable quote — stay in the fund
+        /// for the remaining holders.
+        BasketClaimDustSkipped {
+            /// Validator hotkey the basket belongs to.
+            hotkey: T::AccountId,
+            /// Staker coldkey that claimed.
+            coldkey: T::AccountId,
+            /// Fund rows the claim did not sell.
+            rows: u32,
+            /// Estimated TAO value of the claimant's slices of those rows, left in the fund.
+            forfeited_tao_est: TaoBalance,
+        },
+
+        /// A queued registration failed terminally; its escrow was refunded or
+        /// its pre-upgrade balance lock was released. No subnet was created.
+        NetworkRegistrationCancelled {
+            /// Registrant whose escrow was refunded or legacy lock released.
+            coldkey: T::AccountId,
+            /// Intended subnet owner hotkey.
+            hotkey: T::AccountId,
+            /// Identifier of the cancelled queue entry.
+            lock_id: u32,
+            /// Settlement failure that triggered cancellation.
+            error: DispatchError,
+        },
+        /// The subnet owner or root selected a new epoch reward algorithm.
+        EpochConsensusSet(NetUid, EpochConsensus),
+        /// A bounded explicit pruning step either cancelled queued weights or removed UIDs.
+        NullUidsPruningProgress {
+            /// Subnet being explicitly pruned.
+            netuid: NetUid,
+            /// Owner's final UID capacity target.
+            target: u16,
+            /// Registered UIDs after this step.
+            remaining: u16,
+            /// UIDs deregistered in this step, at most the pruning batch size.
+            removed: u16,
+            /// Pending pre-compaction commits cancelled in this step.
+            cleared_commits: u32,
+        },
+    }
+}
